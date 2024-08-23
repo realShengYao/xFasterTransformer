@@ -80,6 +80,7 @@ parser.add_argument("--beam_width", type=int, default=1, help="Beam Search Width
 parser.add_argument("--input_prompt", type=str, default=None, help="Input Prompt")
 parser.add_argument("--batch_size", type=int, default=1, help="Batch size")
 parser.add_argument("--iteration", type=int, default=3, help=" Benchmakr Iterations")
+parser.add_argument("--time", type=int, default=-1, help="Running time in seconds")
 parser.add_argument("--warmup", type=int, default=1, help="Warm up Iterations")
 parser.add_argument("--dtype", type=str, choices=DTYPE_LIST, default="fp16", help="Data type")
 parser.add_argument("--kv_cache_dtype", type=str, choices=KVCACHE_DTYPE_LIST, default="fp16", help="KV cache dtype")
@@ -203,8 +204,19 @@ if __name__ == "__main__":
             model.generate(input_ids, num_beams=args.beam_width, max_length=max_len, streamer=None)
 
         print("Start benchmark:")
-        for i in range(args.iteration):
+
+        enable_timer = False
+        if args.time > 0:
+            enable_timer = True
+        end_time = time.time() + args.time
+
+        # for i in range(args.iteration):
+        i = 0
+        while i < args.iteration:
             print("iteration", i, ":")
+            if enable_timer & (time.time()>=end_time):
+                print("Reached time limit " + args.time + " seconds, stopped.")
+                break;
             model.config(max_length=max_len, num_beams=args.beam_width)
             model.input(input_ids)
             # first token
@@ -216,6 +228,9 @@ if __name__ == "__main__":
             cost_list = []
             token_list = [next_tokens.view(-1).tolist()[0]]
             while not model.is_done():
+                if enable_timer & (time.time()>=end_time):
+                    print("Reached time limit " + args.time + " seconds, stopped.")
+                    break;
                 start_time = time.perf_counter()
                 next_tokens = model.forward()
                 next_time = time.perf_counter() - start_time
@@ -226,6 +241,8 @@ if __name__ == "__main__":
             next_token_times += cost_list
             response = tokenizer.decode(token_list, skip_special_tokens=True)
             print(f"    Response: {response}")
+            if not enable_timer:
+                i=i+1
 
         total_times = list(map(lambda x: x * 1000, total_times))
         first_token_times = list(map(lambda x: x * 1000, first_token_times))
