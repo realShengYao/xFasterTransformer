@@ -96,6 +96,10 @@ while [ -n "$1" ]; do
         kv_cache_dtype=$2
         shift 2
         ;;
+    -t | --time)
+        time=$2
+        shift 2
+        ;;
     "")
         shift
         break
@@ -116,6 +120,7 @@ output_tokens=${output_tokens:-32}
 beam_width=${beam_width:-1}
 iter=${iter:-10}
 warmup=${warmup:-2}
+time=${time:-1}
 
 Info "You are using model ${model_name}, dtype ${dtype}, kvcache dtype ${kv_cache_dtype}, batch size ${batch_size}, input tokens ${input_tokens}, output tokens ${output_tokens}, beam width ${beam_width} and iteration ${iter} on ${sockets} sockets system."
 
@@ -139,7 +144,8 @@ benchmark_cmd="python "${SCRIPT_DIR}"/benchmark.py \
     --token_out ${output_tokens} \
     --beam_width ${beam_width} \
     --iteration ${iter} \
-    --warmup ${warmup}"
+    --warmup ${warmup} \
+    --time ${time}"
 
 if [[ ${model_name} == *"llama"* ]] || [[ ${model_name} == *"baichuan-"* ]]; then
     benchmark_cmd+=" --padding=False"
