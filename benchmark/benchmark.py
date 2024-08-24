@@ -212,10 +212,11 @@ if __name__ == "__main__":
 
         # for i in range(args.iteration):
         i = 0
+        it = 0
         while i < args.iteration:
-            print("iteration", i, ":")
+            print("iteration", it, ":")
             if enable_timer & (time.time()>=end_time):
-                print("Reached time limit " + args.time + " seconds, stopped.")
+                print("Reached time limit", args.time, "seconds, stopped.")
                 break;
             model.config(max_length=max_len, num_beams=args.beam_width)
             model.input(input_ids)
@@ -229,7 +230,7 @@ if __name__ == "__main__":
             token_list = [next_tokens.view(-1).tolist()[0]]
             while not model.is_done():
                 if enable_timer & (time.time()>=end_time):
-                    print("Reached time limit " + args.time + " seconds, stopped.")
+                    print("Reached time limit", args.time, "seconds, stopped.")
                     break;
                 start_time = time.perf_counter()
                 next_tokens = model.forward()
@@ -241,6 +242,7 @@ if __name__ == "__main__":
             next_token_times += cost_list
             response = tokenizer.decode(token_list, skip_special_tokens=True)
             print(f"    Response: {response}")
+            it=it+1
             if not enable_timer:
                 i=i+1
 
